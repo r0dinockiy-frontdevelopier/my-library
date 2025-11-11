@@ -38,6 +38,7 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'django.contrib.staticfiles',
     'catalog',
+    'django_extensions',
 ]
 
 MIDDLEWARE = [
@@ -75,11 +76,14 @@ WSGI_APPLICATION = 'my_library.wsgi.application'
 
 # Database
 # https://docs.djangoproject.com/en/5.2/ref/settings/#databases
-
 DATABASES = {
     'default': {
         'ENGINE': 'django.db.backends.sqlite3',
         'NAME': BASE_DIR / 'db.sqlite3',
+        # Дополнительные настройки (не обязательные для SQLite)
+        'OPTIONS': {
+            'timeout': 20,  # таймаут в секундах
+        }
     }
 }
 
