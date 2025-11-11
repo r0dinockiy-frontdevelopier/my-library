@@ -1,0 +1,23 @@
+{% extends 'catalog/base.html' %} {% block content %}
+<div class="book-detail">
+  <h2>Статистика библиотеки</h2>
+
+  <div style="text-align: center; padding: 2rem">
+    <div style="font-size: 4rem; margin-bottom: 1rem">📊</div>
+    <h3 style="color: #2c3e50">В моей библиотеке {{ book_count }} книг</h3>
+
+    <div
+      style="
+        margin-top: 2rem;
+        padding: 1rem;
+        background: #ecf0f1;
+        border-radius: 5px;
+      "
+    >
+      <p><strong>Любимый жанр:</strong> Роман</p>
+      <p><strong>Самый старый год издания:</strong> 1866</p>
+      <p><strong>Самый новый год издания:</strong> 1966</p>
+    </div>
+  </div>
+</div>
+{% endblock %}

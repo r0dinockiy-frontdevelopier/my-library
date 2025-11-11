@@ -1,0 +1,26 @@
+{% extends 'catalog/base.html' %}
+
+{% block content %}
+    <h2>Все книги в моей библиотеке</h2>
+    
+    <div class="book-list">
+        {% for book in books %}
+            <div class="book-item">
+                <a href="{% url 'book_detail' book.id %}">
+                    <div class="book-cover">
+                        {% if book.cover_path %}
+                            <img src="/static/{{ book.cover_path }}" alt="{{ book.title }}" style="max-width: 100%; max-height: 100%;">
+                        {% else %}
+                            <span>📖</span>
+                        {% endif %}
+                    </div>
+                    <h3>{{ book.title }}</h3>
+                    <p><strong>Автор:</strong> {{ book.author }}</p>
+                    <p><strong>Год:</strong> {{ book.publication_year }}</p>
+                </a>
+            </div>
+        {% empty %}
+            <p>В вашей библиотеке пока нет книг.</p>
+        {% endfor %}
+    </div>
+{% endblock %}

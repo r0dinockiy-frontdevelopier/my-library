@@ -1,0 +1,28 @@
+{% extends 'catalog/base.html' %}
+
+{% block content %}
+    <a href="{% url 'book_list' %}" class="back-button">← Назад к списку книг</a>
+    
+    <article class="book-detail">
+        <h2>{{ book.title }}</h2>
+        <p><strong>Автор:</strong> {{ book.author }}</p>
+        <p><strong>Жанр:</strong> {{ book.genre }}</p>
+        <p><strong>Год издания:</strong> {{ book.publication_year }}</p>
+
+        <div style="margin: 2rem 0;">
+            {% if book.cover_path %}
+                <img src="/static/{{ book.cover_path }}" alt="{{ book.title }}" style="max-width: 300px; border-radius: 4px;">
+            {% endif %}
+        </div>
+
+        <section style="margin-bottom: 2rem;">
+            <h3>📖 Аннотация</h3>
+            <p>{{ book.annotation|linebreaks }}</p>
+        </section>
+
+        <section>
+            <h3>⭐ Моя рецензия</h3>
+            <p>{{ book.review|linebreaks }}</p>
+        </section>
+    </article>
+{% endblock %}
