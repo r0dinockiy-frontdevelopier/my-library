@@ -1,45 +1,20 @@
-from django.shortcuts import render
-from .data import get_all_books, get_book_by_id, get_books_count
-
-def book_list(request):
-    """Главная страница со списком всех книг."""
-    books = get_all_books()
-    context = {'books': books}
-    return render(request, 'catalog/book_list.html', context)
-
-def book_detail(request, book_id):
-    """Страница с детальной информацией о книге."""
-    book = get_book_by_id(book_id)
-    if not book:
-        # Если книга не найдена, показываем 404
-        from django.http import Http404
-        raise Http404("Книга не найдена")
-    
-    context = {'book': book}
-    return render(request, 'catalog/book_detail.html', context)
-
-def statistics(request):
-    """Страница со статистикой."""
-    book_count = get_books_count()
-    context = {'book_count': book_count}
-    return render(request, 'catalog/statistics.html', context)
 from django.shortcuts import render, get_object_or_404, redirect
 from django.contrib.auth.decorators import login_required
 from django.contrib import messages
-from django.db.models import Count, Avg
-from .models import Book, Review, Author, Genre
+from django.db.models import Count, Avg, Min, Max
+from .models import Book, Author, Genre, Review
 from .forms import BookCreateForm, BookEditForm, ReviewForm, AuthorForm
 
 def book_list(request):
     """Главная страница со списком всех книг из БД"""
     books = Book.objects.all().select_related('author').prefetch_related('genres')
     
-    # Фильтрация по жанру
-    genre_filter = request.GET.get('genre')
-    if genre_filter:
-        books = books.filter(genres__id=genre_filter)
+    # Добавляем фильтрацию по жанру
+    genre_id = request.GET.get('genre')
+    if genre_id:
+        books = books.filter(genres__id=genre_id)
     
-    # Поиск
+    # Добавляем поиск
     search_query = request.GET.get('search')
     if search_query:
         books = books.filter(title__icontains=search_query)
@@ -49,33 +24,49 @@ def book_list(request):
     context = {
         'books': books,
         'genres': genres,
-        'current_genre': genre_filter,
-        'search_query': search_query or ''
     }
     return render(request, 'catalog/book_list.html', context)
 
 def book_detail(request, pk):
-    """Страница с детальной информацией о книге из БД"""
-    book = get_object_or_404(
-        Book.objects.select_related('author').prefetch_related('genres', 'review_set__user'), 
-        pk=pk
-    )
+    """Страница с детальной информацией о книге"""
+    book = get_object_or_404(Book.objects.select_related('author').prefetch_related('genres'), pk=pk)
     reviews = book.review_set.all().select_related('user')
     
-    # Средний рейтинг
-    avg_rating = reviews.aggregate(Avg('rating'))['rating__avg']
-    
-    # Форма для рецензии
-    review_form = ReviewForm()
-    
     context = {
-        'book': book, 
+        'book': book,
         'reviews': reviews,
-        'review_form': review_form,
-        'avg_rating': avg_rating,
-        'can_add_review': request.user.is_authenticated and not reviews.filter(user=request.user).exists()
     }
     return render(request, 'catalog/book_detail.html', context)
+
+def statistics(request):
+    """Страница со статистикой из реальной БД"""
+    book_count = Book.objects.count()
+    
+    # Получаем реальную статистику из базы данных
+    if book_count > 0:
+        publication_years = Book.objects.aggregate(
+            oldest=Min('publication_year'),
+            newest=Max('publication_year')
+        )
+        
+        # Самый популярный жанр
+        popular_genre = Genre.objects.annotate(
+            book_count=Count('book')
+        ).order_by('-book_count').first()
+        
+        oldest_year = publication_years['oldest']
+        newest_year = publication_years['newest']
+        popular_genre_name = popular_genre.name if popular_genre else "Нет данных"
+    else:
+        oldest_year = newest_year = popular_genre_name = "Нет данных"
+    
+    context = {
+        'book_count': book_count,
+        'oldest_year': oldest_year,
+        'newest_year': newest_year,
+        'popular_genre': popular_genre_name,
+    }
+    return render(request, 'catalog/statistics.html', context)
 
 @login_required
 def create_book(request):
@@ -84,10 +75,8 @@ def create_book(request):
         form = BookCreateForm(request.POST, request.FILES)
         if form.is_valid():
             book = form.save()
-            messages.success(request, f'Книга "{book.title}" успешно добавлена в библиотеку!')
+            messages.success(request, f'Книга "{book.title}" успешно добавлена!')
             return redirect('book_detail', pk=book.pk)
-        else:
-            messages.error(request, 'Пожалуйста, исправьте ошибки в форме.')
     else:
         form = BookCreateForm()
     
@@ -108,8 +97,6 @@ def edit_book(request, pk):
             form.save()
             messages.success(request, f'Изменения в книге "{book.title}" успешно сохранены!')
             return redirect('book_detail', pk=book.pk)
-        else:
-            messages.error(request, 'Пожалуйста, исправьте ошибки в форме.')
     else:
         form = BookEditForm(instance=book)
     
@@ -140,8 +127,6 @@ def add_review(request, pk):
             review.save()
             messages.success(request, 'Ваша рецензия успешно добавлена!')
             return redirect('book_detail', pk=book.pk)
-        else:
-            messages.error(request, 'Пожалуйста, исправьте ошибки в форме.')
     else:
         if existing_review:
             form = ReviewForm(instance=existing_review)
@@ -162,7 +147,7 @@ def create_author(request):
         if form.is_valid():
             author = form.save()
             messages.success(request, f'Автор "{author.name}" успешно добавлен!')
-            return redirect('book_list')  # или на страницу автора
+            return redirect('book_list')
     else:
         form = AuthorForm()
     
@@ -172,29 +157,15 @@ def create_author(request):
         'button_text': 'Добавить автора'
     })
 
-def statistics(request):
-    """Страница со статистикой из БД"""
-    book_count = Book.objects.count()
-    author_count = Author.objects.count()
-    genre_count = Genre.objects.count()
-    review_count = Review.objects.count()
+@login_required
+def delete_book(request, pk):
+    """Удаление книги"""
+    book = get_object_or_404(Book, pk=pk)
+    title = book.title
     
-    # Самые популярные жанры
-    popular_genres = Genre.objects.annotate(
-        book_count=Count('book')
-    ).order_by('-book_count')[:5]
+    if request.method == 'POST':
+        book.delete()
+        messages.success(request, f'Книга "{title}" успешно удалена!')
+        return redirect('book_list')
     
-    # Книги с лучшим рейтингом
-    top_rated_books = Book.objects.annotate(
-        avg_rating=Avg('review__rating')
-    ).filter(avg_rating__isnull=False).order_by('-avg_rating')[:5]
-    
-    context = {
-        'book_count': book_count,
-        'author_count': author_count,
-        'genre_count': genre_count,
-        'review_count': review_count,
-        'popular_genres': popular_genres,
-        'top_rated_books': top_rated_books,
-    }
-    return render(request, 'catalog/statistics.html', context)
+    return render(request, 'catalog/confirm_delete.html', {'book': book})
