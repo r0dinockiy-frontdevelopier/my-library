@@ -1,0 +1,60 @@
+{% extends 'catalog/base.html' %}
+
+{% block title %}{{ title }} - Моя библиотека{% endblock %}
+
+{% block content %}
+<div class="content-card" style="max-width: 600px; margin: 0 auto;">
+    <a href="{% url 'book_list' %}" class="back-button">← Назад к каталогу</a>
+    
+    <h2 class="page-title">{{ title }}</h2>
+
+    <form method="post" enctype="multipart/form-data">
+        {% csrf_token %}
+        
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            {% for field in form %}
+            <div class="filter-group">
+                <label for="{{ field.id_for_label }}">
+                    {{ field.label }}
+                    {% if field.field.required %}<span style="color: #dc3545;">*</span>{% endif %}
+                </label>
+                {{ field }}
+                {% if field.help_text %}
+                <small style="color: #6c757d; font-size: 0.8em;">{{ field.help_text }}</small>
+                {% endif %}
+                {% for error in field.errors %}
+                <div style="color: #dc3545; font-size: 0.8em; margin-top: 5px;">{{ error }}</div>
+                {% endfor %}
+            </div>
+            {% endfor %}
+        </div>
+
+        <button type="submit" class="btn btn-primary" style="margin-top: 25px; width: 100%;">
+            {{ button_text }}
+        </button>
+    </form>
+</div>
+
+<style>
+    .filter-group input, .filter-group textarea, .filter-group select {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        font-size: 1em;
+        transition: all 0.3s ease;
+        font-family: inherit;
+    }
+    
+    .filter-group input:focus, .filter-group textarea:focus, .filter-group select:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .filter-group textarea {
+        resize: vertical;
+        min-height: 100px;
+    }
+</style>
+{% endblock %}

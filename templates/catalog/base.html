@@ -289,35 +289,33 @@
             <a href="{% url 'book_list' %}">📚 Моя библиотека</a>
           </h1>
           <nav class="nav">
-            <a
-              href="{% url 'book_list' %}"
-              class="nav-link {% if request.resolver_match.url_name == 'book_list' %}active{% endif %}"
-            >
-              📖 Главная
-            </a>
-            <a
-              href="{% url 'statistics' %}"
-              class="nav-link {% if request.resolver_match.url_name == 'statistics' %}active{% endif %}"
-            >
-              📊 Статистика
-            </a>
-
-            {% if user.is_authenticated %}
-            <a href="{% url 'create_book' %}" class="nav-link"
-              >➕ Добавить книгу</a
-            >
-            <a href="{% url 'create_author' %}" class="nav-link"
-              >✍️ Добавить автора</a
-            >
-            <span class="nav-link" style="color: rgba(255, 255, 255, 0.7)">
-              👋 {{ user.username }}
-            </span>
-            <a href="{% url 'logout' %}" class="nav-link">🚪 Выйти</a>
-            {% else %}
-            <a href="{% url 'login' %}" class="nav-link">🔐 Войти</a>
-            <a href="{% url 'register' %}" class="nav-link">📝 Регистрация</a>
-            {% endif %}
-          </nav>
+    <a href="{% url 'book_list' %}" class="nav-link {% if request.resolver_match.url_name == 'book_list' %}active{% endif %}">
+        📖 Главная
+    </a>
+    <a href="{% url 'statistics' %}" class="nav-link {% if request.resolver_match.url_name == 'statistics' %}active{% endif %}">
+        📊 Статистика
+    </a>
+    
+    {% if user.is_authenticated %}
+        <a href="{% url 'create_book' %}" class="nav-link {% if request.resolver_match.url_name == 'create_book' %}active{% endif %}">
+            ➕ Добавить книгу
+        </a>
+        <a href="{% url 'create_author' %}" class="nav-link {% if request.resolver_match.url_name == 'create_author' %}active{% endif %}">
+            ✍️ Добавить автора
+        </a>
+        <span class="nav-link" style="color: rgba(255,255,255,0.7); cursor: default;">
+            👋 {{ user.username }}
+        </span>
+        <a href="{% url 'logout' %}" class="nav-link">🚪 Выйти</a>
+    {% else %}
+        <a href="{% url 'login' %}" class="nav-link {% if request.resolver_match.url_name == 'login' %}active{% endif %}">
+            🔐 Войти
+        </a>
+        <a href="{% url 'register' %}" class="nav-link {% if request.resolver_match.url_name == 'register' %}active{% endif %}">
+            📝 Регистрация
+        </a>
+    {% endif %}
+</nav>
         </div>
       </header>
 

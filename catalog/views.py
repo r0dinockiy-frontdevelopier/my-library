@@ -30,7 +30,9 @@ def book_list(request):
 def book_detail(request, pk):
     """Страница с детальной информацией о книге"""
     book = get_object_or_404(Book.objects.select_related('author').prefetch_related('genres'), pk=pk)
-    reviews = book.review_set.all().select_related('user')
+    reviews = book.review_set.all().select_related('user')  # Это должно работать
+    
+    print(f"Найдено рецензий: {reviews.count()}")  # Для отладки
     
     context = {
         'book': book,
@@ -70,7 +72,7 @@ def statistics(request):
 
 @login_required
 def create_book(request):
-    """Создание новой книги"""
+    """Создание новой книги (только для авторизованных пользователей)"""
     if request.method == 'POST':
         form = BookCreateForm(request.POST, request.FILES)
         if form.is_valid():
@@ -80,7 +82,7 @@ def create_book(request):
     else:
         form = BookCreateForm()
     
-    return render(request, 'catalog/book_form.html', {
+    return render(request, 'catalog/book_form.html', {  
         'form': form,
         'title': 'Добавить новую книгу',
         'button_text': 'Добавить книгу'
