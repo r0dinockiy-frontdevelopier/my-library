@@ -223,3 +223,120 @@ def statistics(request):
         'genres': all_genres,
     }
     return render(request, 'catalog/statistics.html', context)
+def register(request):
+    """Регистрация нового пользователя"""
+    if request.method == 'POST':
+        form = UserCreationForm(request.POST)
+        if form.is_valid():
+            user = form.save()
+            login(request, user)
+            messages.success(request, 'Регистрация прошла успешно! Добро пожаловать в библиотеку!')
+            return redirect('book_list')
+    else:
+        form = UserCreationForm()
+    
+    return render(request, 'registration/register.html', {'form': form})
+
+# Остальные функции остаются без изменений, но добавляем декоратор @login_required
+
+@login_required
+def create_book(request):
+    """Создание новой книги (только для авторизованных пользователей)"""
+    if request.method == 'POST':
+        form = BookCreateForm(request.POST, request.FILES)
+        if form.is_valid():
+            book = form.save()
+            messages.success(request, f'Книга "{book.title}" успешно добавлена!')
+            return redirect('book_detail', pk=book.pk)
+    else:
+        form = BookCreateForm()
+    
+    return render(request, 'catalog/book_form.html', {
+        'form': form,
+        'title': 'Добавить новую книгу',
+        'button_text': 'Добавить книгу'
+    })
+
+@login_required
+def edit_book(request, pk):
+    """Редактирование книги (только для авторизованных пользователей)"""
+    book = get_object_or_404(Book, pk=pk)
+    
+    if request.method == 'POST':
+        form = BookEditForm(request.POST, request.FILES, instance=book)
+        if form.is_valid():
+            form.save()
+            messages.success(request, f'Изменения в книге "{book.title}" успешно сохранены!')
+            return redirect('book_detail', pk=book.pk)
+    else:
+        form = BookEditForm(instance=book)
+    
+    return render(request, 'catalog/book_form.html', {
+        'form': form,
+        'title': f'Редактировать книгу: {book.title}',
+        'button_text': 'Сохранить изменения'
+    })
+
+@login_required
+def add_review(request, pk):
+    """Добавление рецензии (только для авторизованных пользователей)"""
+    book = get_object_or_404(Book, pk=pk)
+    
+    # Проверяем, есть ли уже рецензия от этого пользователя
+    existing_review = Review.objects.filter(book=book, user=request.user).first()
+    
+    if request.method == 'POST':
+        if existing_review:
+            form = ReviewForm(request.POST, instance=existing_review)
+        else:
+            form = ReviewForm(request.POST)
+        
+        if form.is_valid():
+            review = form.save(commit=False)
+            review.book = book
+            review.user = request.user
+            review.save()
+            messages.success(request, 'Ваша рецензия успешно добавлена!')
+            return redirect('book_detail', pk=book.pk)
+    else:
+        if existing_review:
+            form = ReviewForm(instance=existing_review)
+        else:
+            form = ReviewForm()
+    
+    return render(request, 'catalog/review_form.html', {
+        'form': form,
+        'book': book,
+        'existing_review': existing_review
+    })
+
+@login_required
+def create_author(request):
+    """Создание нового автора (только для авторизованных пользователей)"""
+    if request.method == 'POST':
+        form = AuthorForm(request.POST)
+        if form.is_valid():
+            author = form.save()
+            messages.success(request, f'Автор "{author.name}" успешно добавлен!')
+            return redirect('book_list')
+    else:
+        form = AuthorForm()
+    
+    return render(request, 'catalog/author_form.html', {
+        'form': form,
+        'title': 'Добавить нового автора',
+        'button_text': 'Добавить автора'
+    })
+
+@login_required
+def delete_book(request, pk):
+    """Удаление книги (только для авторизованных пользователей)"""
+    book = get_object_or_404(Book, pk=pk)
+    title = book.title
+    
+    if request.method == 'POST':
+        book.delete()
+        messages.success(request, f'Книга "{title}" успешно удалена!')
+        return redirect('book_list')
+    
+    return render(request, 'catalog/confirm_delete.html', {'book': book})

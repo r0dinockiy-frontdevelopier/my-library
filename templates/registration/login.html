@@ -1,0 +1,40 @@
+{% extends 'catalog/base.html' %}
+
+{% block title %}Вход - Моя библиотека{% endblock %}
+
+{% block content %}
+<div class="content-card" style="max-width: 400px; margin: 0 auto;">
+    <h2 class="page-title">🔐 Вход в систему</h2>
+    
+    {% if form.errors %}
+    <div style="background: #fee; color: #c33; padding: 10px; border-radius: 5px; margin-bottom: 20px;">
+        Неверное имя пользователя или пароль.
+    </div>
+    {% endif %}
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        <div class="filter-group" style="margin-bottom: 20px;">
+            <label for="id_username">👤 Имя пользователя</label>
+            <input type="text" name="username" id="id_username" class="search-input" required>
+        </div>
+        
+        <div class="filter-group" style="margin-bottom: 25px;">
+            <label for="id_password">🔒 Пароль</label>
+            <input type="password" name="password" id="id_password" class="search-input" required>
+        </div>
+        
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-bottom: 15px;">
+            Войти
+        </button>
+        
+        <p style="text-align: center; color: #6c757d;">
+            Нет аккаунта? 
+            <a href="{% url 'register' %}" style="color: #667eea; text-decoration: none;">
+                Зарегистрируйтесь
+            </a>
+        </p>
+    </form>
+</div>
+{% endblock %}

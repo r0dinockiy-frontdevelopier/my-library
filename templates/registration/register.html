@@ -1,0 +1,59 @@
+{% extends 'catalog/base.html' %}
+
+{% block title %}Регистрация - Моя библиотека{% endblock %}
+
+{% block content %}
+<div class="content-card" style="max-width: 400px; margin: 0 auto;">
+    <h2 class="page-title">📝 Регистрация</h2>
+    
+    <form method="post">
+        {% csrf_token %}
+        
+        {% for field in form %}
+        <div class="filter-group" style="margin-bottom: 20px;">
+            <label for="{{ field.id_for_label }}">
+                {% if field.name == 'username' %}👤{% endif %}
+                {% if field.name == 'password1' %}🔒{% endif %}
+                {% if field.name == 'password2' %}✅{% endif %}
+                {{ field.label }}
+            </label>
+            {{ field }}
+            {% if field.help_text %}
+            <small style="color: #6c757d; font-size: 0.8em;">{{ field.help_text }}</small>
+            {% endif %}
+            {% for error in field.errors %}
+            <div style="color: #dc3545; font-size: 0.8em; margin-top: 5px;">{{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endfor %}
+        
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+            Зарегистрироваться
+        </button>
+        
+        <p style="text-align: center; color: #6c757d; margin-top: 15px;">
+            Уже есть аккаунт? 
+            <a href="{% url 'login' %}" style="color: #667eea; text-decoration: none;">
+                Войдите
+            </a>
+        </p>
+    </form>
+</div>
+
+<style>
+    .filter-group input {
+        width: 100%;
+        padding: 12px 16px;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        font-size: 1em;
+        transition: all 0.3s ease;
+    }
+    
+    .filter-group input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+</style>
+{% endblock %}
