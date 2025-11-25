@@ -306,7 +306,14 @@
         <span class="nav-link" style="color: rgba(255,255,255,0.7); cursor: default;">
             👋 {{ user.username }}
         </span>
-        <a href="{% url 'logout' %}" class="nav-link">🚪 Выйти</a>
+        
+        <!-- Форма для выхода (POST запрос) -->
+        <form method="post" action="{% url 'logout' %}" class="logout-form">
+            {% csrf_token %}
+            <button type="submit" class="nav-link logout-btn">
+                🚪 Выйти
+            </button>
+        </form>
     {% else %}
         <a href="{% url 'login' %}" class="nav-link {% if request.resolver_match.url_name == 'login' %}active{% endif %}">
             🔐 Войти
@@ -316,6 +323,33 @@
         </a>
     {% endif %}
 </nav>
+
+<style>
+    .logout-form {
+        display: inline;
+        margin: 0;
+        padding: 0;
+    }
+    
+    .logout-btn {
+        background: none;
+        border: none;
+        color: rgba(255, 255, 255, 0.9);
+        font: inherit;
+        cursor: pointer;
+        padding: 8px 16px;
+        border-radius: 25px;
+        transition: all 0.3s ease;
+        text-decoration: none;
+        display: inline;
+    }
+    
+    .logout-btn:hover {
+        color: white;
+        background: rgba(255, 255, 255, 0.1);
+        transform: translateY(-2px);
+    }
+</style>
         </div>
       </header>
 

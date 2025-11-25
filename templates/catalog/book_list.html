@@ -1,159 +1,530 @@
 {% extends 'catalog/base.html' %}
 {% load static %}
 
+{% block title %}Каталог книг - Моя библиотека{% endblock %}
+
 {% block content %}
-<div class="container">
-    <!-- Кнопки действий -->
-    <div class="row mb-4">
-        <div class="col-12">
-            <div class="d-flex gap-2 flex-wrap">
-                {% if user.is_authenticated %}
-                <a href="{% url 'create_book' %}" class="btn btn-success">
-                    📖 Создать книгу
-                </a>
-                <a href="{% url 'create_author' %}" class="btn btn-primary">
-                    👤 Добавить автора
-                </a>
-                {% endif %}
-                <a href="{% url 'statistics' %}" class="btn btn-info">
-                    📊 Статистика
-                </a>
-            </div>
+<div class="content-card">
+    <!-- Заголовок и статистика -->
+    <div style="display: flex; justify-content: between; align-items: center; margin-bottom: 30px;">
+        <div>
+            <h2 class="page-title">📚 Каталог книг</h2>
+            <p class="page-subtitle">Ваша личная библиотека</p>
+        </div>
+        <div class="stat-badge">
+            <span class="stat-number">{{ books|length }}</span>
+            <span class="stat-label">книг</span>
         </div>
     </div>
 
-    <div class="row">
-        <div class="col-md-3">
-            <!-- Фильтры и поиск -->
-            <div class="card mb-4">
-                <div class="card-header">
-                    <h5 class="card-title mb-0">Фильтры</h5>
+    <!-- Кнопки действий -->
+    <div class="action-buttons">
+        {% if user.is_authenticated %}
+        <a href="{% url 'create_book' %}" class="btn btn-primary">
+            ➕ Добавить книгу
+        </a>
+        <a href="{% url 'create_author' %}" class="btn btn-secondary">
+            ✍️ Добавить автора
+        </a>
+        {% endif %}
+        <a href="{% url 'statistics' %}" class="btn btn-outline">
+            📊 Статистика
+        </a>
+    </div>
+
+    <!-- Фильтры -->
+    <div class="filters-section">
+        <h3 class="section-title">🔍 Поиск и фильтры</h3>
+        <form method="get" class="filters-form">
+            <div class="filters-grid">
+                <div class="filter-group">
+                    <label for="search" class="filter-label">
+                        <span class="filter-icon">📖</span>
+                        Название книги
+                    </label>
+                    <input type="text" id="search" name="search" 
+                           value="{{ search_query }}" 
+                           class="search-input" 
+                           placeholder="Введите название...">
                 </div>
-                <div class="card-body">
-                    <form method="get" class="filter-form">
-                        <div class="mb-3">
-                            <label for="search" class="form-label">Поиск</label>
-                            <input type="text" class="form-control" id="search" name="search" 
-                                   value="{{ search_query }}" placeholder="Название книги...">
-                        </div>
-                        
-                        <div class="mb-3">
-                            <label for="genre" class="form-label">Жанр</label>
-                            <select class="form-select" id="genre" name="genre">
-                                <option value="">Все жанры</option>
-                                {% for genre in genres %}
-                                    <option value="{{ genre.id }}" 
-                                            {% if current_genre == genre.id|stringformat:"i" %}selected{% endif %}>
-                                        {{ genre.name }}
-                                    </option>
-                                {% endfor %}
-                            </select>
-                        </div>
-                        
-                        <button type="submit" class="btn btn-primary w-100">Применить</button>
-                        <a href="{% url 'book_list' %}" class="btn btn-outline-secondary w-100 mt-2">Сбросить</a>
-                    </form>
+                
+                <div class="filter-group">
+                    <label for="genre" class="filter-label">
+                        <span class="filter-icon">🏷️</span>
+                        Жанр
+                    </label>
+                    <select id="genre" name="genre" class="select-input">
+                        <option value="">Все жанры</option>
+                        {% for genre in genres %}
+                            <option value="{{ genre.id }}" 
+                                    {% if current_genre == genre.id|stringformat:"i" %}selected{% endif %}>
+                                {{ genre.name }}
+                            </option>
+                        {% endfor %}
+                    </select>
+                </div>
+                
+                <div class="filter-actions">
+                    <button type="submit" class="btn btn-primary filter-btn">
+                        <span class="btn-icon">✅</span>
+                        Применить
+                    </button>
+                    <a href="{% url 'book_list' %}" class="btn btn-secondary filter-btn">
+                        <span class="btn-icon">🔄</span>
+                        Сбросить
+                    </a>
                 </div>
             </div>
+        </form>
+    </div>
+
+    <!-- Сообщения -->
+    {% if messages %}
+    <div class="messages-container">
+        {% for message in messages %}
+        <div class="alert alert-{{ message.tags }}">
+            <span class="alert-icon">
+                {% if message.tags == 'success' %}✅{% endif %}
+                {% if message.tags == 'error' %}❌{% endif %}
+                {% if message.tags == 'warning' %}⚠️{% endif %}
+                {% if message.tags == 'info' %}ℹ️{% endif %}
+            </span>
+            {{ message }}
         </div>
-        
-        <div class="col-md-9">
-            <div class="d-flex justify-content-between align-items-center mb-4">
-                <h2>Каталог книг</h2>
-                <span class="badge bg-primary">Всего: {{ books|length }}</span>
-            </div>
-            
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                        {{ message }}
-                        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        {% endfor %}
+    </div>
+    {% endif %}
+
+    <!-- Список книг -->
+    <div class="books-section">
+        {% if books %}
+        <div class="book-grid">
+            {% for book in books %}
+            <div class="book-card">
+                <div class="book-cover">
+                    {% if book.cover %}
+                        <img src="{{ book.cover.url }}" alt="{{ book.title }}" class="book-image">
+                    {% else %}
+                        <div class="book-placeholder">
+                            <span class="placeholder-icon">📚</span>
+                        </div>
+                    {% endif %}
+                </div>
+                
+                <div class="book-content">
+                    <h3 class="book-title">{{ book.title }}</h3>
+                    <p class="book-author">{{ book.author.name }}</p>
+                    
+                    <div class="book-meta">
+                        <span class="meta-item">
+                            <span class="meta-icon">📅</span>
+                            {{ book.publication_year }}
+                        </span>
+                        <span class="meta-item">
+                            <span class="meta-icon">📄</span>
+                            {{ book.pages }} стр.
+                        </span>
                     </div>
-                {% endfor %}
+                    
+                    <div class="book-genres">
+                        {% for genre in book.genres.all %}
+                        <span class="genre-tag">{{ genre.name }}</span>
+                        {% endfor %}
+                    </div>
+                    
+                    <div class="book-actions">
+                        <a href="{% url 'book_detail' book.pk %}" class="btn btn-primary btn-sm">
+                            👀 Подробнее
+                        </a>
+                        {% if user.is_authenticated %}
+                        <div class="action-buttons-small">
+                            <a href="{% url 'edit_book' book.pk %}" class="btn-icon" title="Редактировать">
+                                ✏️
+                            </a>
+                            <a href="{% url 'add_review' book.pk %}" class="btn-icon" title="Добавить рецензию">
+                                ⭐
+                            </a>
+                            <form method="post" action="{% url 'delete_book' book.pk %}" class="inline-form">
+                                {% csrf_token %}
+                                <button type="submit" class="btn-icon delete-btn" 
+                                        onclick="return confirm('Удалить книгу «{{ book.title }}»?')" 
+                                        title="Удалить">
+                                    🗑️
+                                </button>
+                            </form>
+                        </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <div class="empty-state">
+            <div class="empty-icon">📚</div>
+            <h3>Библиотека пуста</h3>
+            <p>Пока нет книг в вашей библиотеке</p>
+            {% if user.is_authenticated %}
+            <a href="{% url 'create_book' %}" class="btn btn-primary">Добавить первую книгу</a>
+            {% else %}
+            <a href="{% url 'login' %}" class="btn btn-primary">Войти для добавления книг</a>
             {% endif %}
-            
-            <div class="row">
-                    {% for book in books %}
-                        <div class="col-lg-4 col-md-6 mb-4">
-                            <div class="card h-100 book-card">
-                                <!-- Блок с обложкой книги -->
-                                <div class="book-cover-container" style="height: 250px; overflow: hidden;">
-                                    {% if book.cover %}
-                                        <img src="{{ book.cover.url }}" 
-                                            class="card-img-top" 
-                                            alt="{{ book.title }}"
-                                            style="width: 100%; height: 100%; object-fit: cover;">
-                                    {% else %}
-                                        <div class="d-flex align-items-center justify-content-center h-100 bg-light">
-                                            <div class="text-center text-muted">
-                                                <i class="fas fa-book" style="font-size: 3rem;"></i>
-                                                <p class="mt-2">Нет обложки</p>
-                                            </div>
-                                        </div>
-                                    {% endif %}
-                                </div>
-                                
-                                <div class="card-body d-flex flex-column">
-                                    <h5 class="card-title">{{ book.title }}</h5>
-                              
-                                <p class="card-text text-muted">
-                                    <strong>Автор:</strong> {{ book.author.name }}<br>
-                                    <strong>Год:</strong> {{ book.publication_year }}<br>
-                                    <strong>Жанры:</strong> 
-                                    {% for genre in book.genres.all %}
-                                        <span class="badge bg-secondary">{{ genre.name }}</span>
-                                    {% endfor %}
-                                </p>
-                                
-                                <div class="mt-auto">
-                                    <div class="d-flex gap-1 flex-wrap">
-                                        <a href="{% url 'book_detail' book.pk %}" class="btn btn-primary btn-sm">
-                                            Подробнее
-                                        </a>
-                                        {% if user.is_authenticated %}
-                                            <a href="{% url 'edit_book' book.pk %}" class="btn btn-outline-secondary btn-sm">
-                                                ✏️
-                                            </a>
-                                            <a href="{% url 'add_review' book.pk %}" class="btn btn-outline-info btn-sm">
-                                                ⭐
-                                            </a>
-                                            <form method="post" action="{% url 'delete_book' book.pk %}" style="display: inline;">
-                                                {% csrf_token %}
-                                                <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Удалить книгу?')">
-                                                    🗑️
-                                                </button>
-                                            </form>
-                                        {% endif %}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                {% empty %}
-                    <div class="col-12">
-                        <div class="alert alert-info text-center">
-                            <h4>📚 Библиотека пуста</h4>
-                            <p>Пока нет книг в вашей библиотеке.</p>
-                            {% if user.is_authenticated %}
-                                <a href="{% url 'create_book' %}" class="btn btn-success">Добавить первую книгу</a>
-                            {% else %}
-                                <a href="{% url 'admin:login' %}" class="btn btn-primary">Войти в админку</a>
-                            {% endif %}
-                        </div>
-                    </div>
-                {% endfor %}
-            </div>
         </div>
+        {% endif %}
     </div>
 </div>
 
 <style>
-.book-card {
-    transition: transform 0.2s;
-}
-.book-card:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 4px 8px rgba(0,0,0,0.1);
-}
+    /* Статистика */
+    .stat-badge {
+        background: linear-gradient(135deg, #667eea, #764ba2);
+        color: white;
+        padding: 15px 20px;
+        border-radius: 15px;
+        text-align: center;
+        min-width: 100px;
+    }
+    
+    .stat-number {
+        display: block;
+        font-size: 2em;
+        font-weight: bold;
+        line-height: 1;
+    }
+    
+    .stat-label {
+        font-size: 0.9em;
+        opacity: 0.9;
+    }
+    
+    /* Кнопки действий */
+    .action-buttons {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+    }
+    
+    .btn-outline {
+        background: transparent;
+        border: 2px solid #667eea;
+        color: #667eea;
+    }
+    
+    .btn-outline:hover {
+        background: #667eea;
+        color: white;
+    }
+    
+    /* Фильтры */
+    .filters-section {
+        background: white;
+        padding: 25px;
+        border-radius: 15px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.05);
+        margin-bottom: 30px;
+        border-left: 4px solid #667eea;
+    }
+    
+    .filters-form {
+        margin-top: 20px;
+    }
+    
+    .filters-grid {
+        display: grid;
+        grid-template-columns: 1fr 1fr auto;
+        gap: 20px;
+        align-items: end;
+    }
+    
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+    }
+    
+    .filter-label {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 8px;
+        font-size: 0.95em;
+    }
+    
+    .filter-icon {
+        font-size: 1.1em;
+    }
+    
+    .search-input, .select-input {
+        padding: 12px 16px;
+        border: 2px solid #e9ecef;
+        border-radius: 10px;
+        font-size: 1em;
+        transition: all 0.3s ease;
+        background: white;
+    }
+    
+    .search-input:focus, .select-input:focus {
+        outline: none;
+        border-color: #667eea;
+        box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .search-input {
+        background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23666' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cpath d='m21 21-4.3-4.3'%3E%3C/path%3E%3C/svg%3E");
+        background-repeat: no-repeat;
+        background-position: 16px center;
+        padding-left: 45px;
+        background-size: 18px;
+    }
+    
+    .filter-actions {
+        display: flex;
+        gap: 10px;
+    }
+    
+    .filter-btn {
+        white-space: nowrap;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+    }
+    
+    .btn-icon {
+        font-size: 0.9em;
+    }
+    
+    /* Сообщения */
+    .messages-container {
+        margin-bottom: 25px;
+    }
+    
+    .alert {
+        padding: 15px 20px;
+        border-radius: 10px;
+        margin-bottom: 15px;
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        border-left: 4px solid;
+    }
+    
+    .alert-success {
+        background: #f0fff4;
+        border-color: #28a745;
+        color: #155724;
+    }
+    
+    .alert-error {
+        background: #fee;
+        border-color: #dc3545;
+        color: #721c24;
+    }
+    
+    .alert-warning {
+        background: #fffbf0;
+        border-color: #ffc107;
+        color: #856404;
+    }
+    
+    .alert-info {
+        background: #f0f9ff;
+        border-color: #17a2b8;
+        color: #0c5460;
+    }
+    
+    /* Сетка книг */
+    .book-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+        gap: 25px;
+    }
+    
+    .book-card {
+        background: white;
+        border-radius: 15px;
+        box-shadow: 0 5px 15px rgba(0,0,0,0.08);
+        transition: all 0.3s ease;
+        overflow: hidden;
+        border-left: 4px solid #667eea;
+    }
+    
+    .book-card:hover {
+        transform: translateY(-8px);
+        box-shadow: 0 15px 30px rgba(0,0,0,0.15);
+    }
+    
+    .book-cover {
+        height: 200px;
+        overflow: hidden;
+        background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+    
+    .book-image {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+    }
+    
+    .book-placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        height: 100%;
+        color: white;
+    }
+    
+    .placeholder-icon {
+        font-size: 3em;
+        opacity: 0.8;
+    }
+    
+    .book-content {
+        padding: 20px;
+    }
+    
+    .book-title {
+        font-size: 1.2em;
+        font-weight: 600;
+        color: #2c3e50;
+        margin-bottom: 8px;
+        line-height: 1.3;
+    }
+    
+    .book-author {
+        color: #667eea;
+        font-weight: 500;
+        margin-bottom: 15px;
+        font-size: 0.95em;
+    }
+    
+    .book-meta {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 15px;
+    }
+    
+    .meta-item {
+        display: flex;
+        align-items: center;
+        gap: 5px;
+        color: #6c757d;
+        font-size: 0.85em;
+    }
+    
+    .meta-icon {
+        font-size: 1em;
+    }
+    
+    .book-genres {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 5px;
+        margin-bottom: 20px;
+    }
+    
+    .genre-tag {
+        background: #f8f9fa;
+        color: #495057;
+        padding: 4px 8px;
+        border-radius: 12px;
+        font-size: 0.75em;
+        border: 1px solid #e9ecef;
+    }
+    
+    .book-actions {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+    
+    .btn-sm {
+        padding: 8px 16px;
+        font-size: 0.85em;
+    }
+    
+    .action-buttons-small {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .btn-icon {
+        background: none;
+        border: none;
+        font-size: 1.2em;
+        cursor: pointer;
+        padding: 5px;
+        border-radius: 5px;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-icon:hover {
+        background: #f8f9fa;
+        transform: scale(1.1);
+    }
+    
+    .delete-btn:hover {
+        background: #fee;
+        color: #dc3545;
+    }
+    
+    .inline-form {
+        display: inline;
+        margin: 0;
+        padding: 0;
+    }
+    
+    /* Состояние пустой библиотеки */
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #6c757d;
+    }
+    
+    .empty-icon {
+        font-size: 4em;
+        margin-bottom: 20px;
+        opacity: 0.5;
+    }
+    
+    .empty-state h3 {
+        color: #2c3e50;
+        margin-bottom: 10px;
+    }
+    
+    /* Адаптивность */
+    @media (max-width: 768px) {
+        .filters-grid {
+            grid-template-columns: 1fr;
+            gap: 15px;
+        }
+        
+        .filter-actions {
+            justify-content: stretch;
+        }
+        
+        .filter-btn {
+            flex: 1;
+        }
+        
+        .book-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+        
+        .book-actions {
+            flex-direction: column;
+            gap: 10px;
+            align-items: stretch;
+        }
+        
+        .action-buttons-small {
+            justify-content: center;
+        }
+    }
 </style>
 {% endblock %}

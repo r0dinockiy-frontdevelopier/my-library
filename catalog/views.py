@@ -4,7 +4,8 @@ from django.contrib import messages
 from django.db.models import Count, Avg, Min, Max
 from .models import Book, Author, Genre, Review
 from .forms import BookCreateForm, BookEditForm, ReviewForm, AuthorForm
-
+from django.contrib.auth.forms import UserCreationForm  
+from django.contrib.auth import login, logout
 def book_list(request):
     """Главная страница со списком всех книг из БД"""
     books = Book.objects.all().select_related('author').prefetch_related('genres')
@@ -239,11 +240,17 @@ def register(request):
     
     return render(request, 'registration/register.html', {'form': form})
 
-# Остальные функции остаются без изменений, но добавляем декоратор @login_required
-
+# Добавьте функцию для выхода через GET
+@login_required
+def custom_logout(request):
+    """Выход через GET запрос"""
+    logout(request)
+    messages.success(request, 'Вы успешно вышли из системы.')
+    return redirect('book_list')
 @login_required
 def create_book(request):
-    """Создание новой книги (только для авторизованных пользователей)"""
+    """Создание новой книги"""
+    print("create_book view called")  # Для отладки
     if request.method == 'POST':
         form = BookCreateForm(request.POST, request.FILES)
         if form.is_valid():
@@ -253,6 +260,7 @@ def create_book(request):
     else:
         form = BookCreateForm()
     
+    print("Rendering book_form.html")  # Для отладки
     return render(request, 'catalog/book_form.html', {
         'form': form,
         'title': 'Добавить новую книгу',

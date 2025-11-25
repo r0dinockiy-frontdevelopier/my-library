@@ -2,9 +2,12 @@ from django.urls import path
 from . import views
 
 urlpatterns = [
+    # Основные маршруты
     path('', views.book_list, name='book_list'),
     path('book/<int:pk>/', views.book_detail, name='book_detail'),
     path('statistics/', views.statistics, name='statistics'),
+    path('register/', views.register, name='register'),
+    path('logout/', views.custom_logout, name='logout'),
     
     # Защищенные маршруты (только для авторизованных пользователей)
     path('book/create/', views.create_book, name='create_book'),
