@@ -169,3 +169,57 @@ def delete_book(request, pk):
         return redirect('book_list')
     
     return render(request, 'catalog/confirm_delete.html', {'book': book})
+def statistics(request):
+    """Страница со статистикой из реальной БД"""
+    # Основная статистика
+    total_books = Book.objects.count()
+    total_authors = Author.objects.count()
+    total_genres = Genre.objects.count()
+    total_reviews = Review.objects.count()
+    
+    # Статистика по жанрам
+    popular_genre = Genre.objects.annotate(
+        book_count=Count('book')
+    ).order_by('-book_count').first()
+    
+    # Статистика по годам
+    publication_stats = Book.objects.aggregate(
+        oldest_year=Min('publication_year'),
+        newest_year=Max('publication_year'),
+        avg_year=Avg('publication_year')
+    )
+    
+    # Статистика по рейтингам
+    rating_stats = Review.objects.aggregate(
+        avg_rating=Avg('rating'),
+        total_ratings=Count('id')
+    )
+    
+    # Последние добавленные книги
+    recent_books = Book.objects.select_related('author').order_by('-created_at')[:5]
+    
+    # Самые рецензируемые книги
+    popular_books = Book.objects.annotate(
+        review_count=Count('review')
+    ).order_by('-review_count')[:3]
+    
+    # Все жанры для фильтра
+    all_genres = Genre.objects.all()
+    
+    context = {
+        'total_books': total_books,
+        'total_authors': total_authors,
+        'total_genres': total_genres,
+        'total_reviews': total_reviews,
+        'popular_genre': popular_genre,
+        'popular_genre_count': popular_genre.book_count if popular_genre else 0,
+        'oldest_year': publication_stats['oldest_year'],
+        'newest_year': publication_stats['newest_year'],
+        'avg_publication_year': round(publication_stats['avg_year']) if publication_stats['avg_year'] else 0,
+        'avg_rating': round(rating_stats['avg_rating'], 1) if rating_stats['avg_rating'] else 0,
+        'total_ratings': rating_stats['total_ratings'],
+        'recent_books': recent_books,
+        'popular_books': popular_books,
+        'genres': all_genres,
+    }
+    return render(request, 'catalog/statistics.html', context)
