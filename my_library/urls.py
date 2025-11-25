@@ -7,7 +7,7 @@ from django.views.generic import RedirectView
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('', include('catalog.urls')),
+    path('books/', include('catalog.urls')),
     
     # URL для аутентификации
     path('login/', auth_views.LoginView.as_view(template_name='registration/login.html'), name='login'),
